@@ -206,10 +206,10 @@ if menu == "🏠 Início":
     
     with col2:
         st.markdown('<div class="team-card"><div style="font-size: 1.8rem;">👥</div><div class="team-name">Nathalia Rayssa</div><div class="team-role">Designer e Documentadora</div></div>', unsafe_allow_html=True)
-        st.markdown('<div class="team-card"><div style="font-size: 1.8rem;">🎓</div><div class="team-name">Djefersson</div><div class="team-role">Especialista em BD</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="team-card"><div style="font-size: 1.8rem;">🎓</div><div class="team-name">Djefferson</div><div class="team-role">Especialista em BD</div></div>', unsafe_allow_html=True)
     
     with col3:
-        st.markdown('<div class="team-card"><div style="font-size: 1.8rem;">🔐</div><div class="team-name">Rianderson</div><div class="team-role">Arquiteto de Segurança</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="team-card"><div style="font-size: 1.8rem;">🔐</div><div class="team-name">Rianderson</div><div class="team-role">Arquiteto de Cyber Segurança</div></div>', unsafe_allow_html=True)
     
     st.markdown("---")
     
