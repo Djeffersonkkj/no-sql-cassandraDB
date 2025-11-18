@@ -1,674 +1,962 @@
 import streamlit as st
 import pandas as pd
 
-# Configuração da página
 st.set_page_config(
-    page_title="Sistema de Mensagens com Cassandra",
+    page_title="NoSQL com Cassandra: Sistema de Mensagens Escalável",
     page_icon="💬",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# CSS customizado para deixar GOSTOSO
+# CSS ENXUTO
 st.markdown("""
     <style>
-    .main-header {
-        font-size: 3rem;
-        font-weight: bold;
-        color: #1F4788;
-        text-align: center;
-        padding: 2rem 0;
-    }
-    .sub-header {
-        font-size: 1.5rem;
-        color: #2E5C8A;
-        font-weight: bold;
-        margin-top: 2rem;
-    }
-    .highlight-box {
-        background-color: #E8F5E9;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 5px solid #2E7D32;
-        margin: 1rem 0;
-    }
-    .warning-box {
-        background-color: #FFF3E0;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 5px solid #F57C00;
-        margin: 1rem 0;
-    }
-    .danger-box {
-        background-color: #FFEBEE;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 5px solid #C62828;
-        margin: 1rem 0;
-    }
-    .metric-card {
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    
+    * { font-family: 'Inter', sans-serif; }
+    .main { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .block-container { background: white; border-radius: 15px; padding: 1.5rem; margin-top: 1rem; }
+    
+    .hero-title {
+        font-size: 2.2rem;
+        font-weight: 700;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+        margin-bottom: 0.8rem;
+        line-height: 1.2;
+    }
+    
+    .hero-subtitle {
+        font-size: 0.95rem;
+        color: #666;
+        text-align: center;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+    
+    .section-header {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #2D3748;
+        margin-top: 1.5rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .card {
+        background: linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%);
+        padding: 1rem;
         border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+        margin: 0.6rem 0;
+        border-left: 3px solid #667eea;
+        font-size: 0.9rem;
+    }
+    
+    .card-purple {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 10px;
+        box-shadow: 0 6px 15px rgba(102,126,234,0.3);
+        margin: 0.6rem 0;
+    }
+    
+    .card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .team-card {
+        background: linear-gradient(135deg, #E9D5FF 0%, #DDD6FE 100%);
+        padding: 0.8rem;
+        border-radius: 10px;
+        text-align: center;
+        margin: 0.4rem;
+        font-size: 0.85rem;
+    }
+    
+    .team-name {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #5B21B6;
+        margin-bottom: 0.2rem;
+    }
+    
+    .team-role {
+        font-size: 0.8rem;
+        color: #7C3AED;
+    }
+    
+    .metric-big {
+        font-size: 1.8rem;
+        font-weight: 700;
         color: white;
         text-align: center;
+    }
+    
+    .metric-label {
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.9);
+        text-align: center;
+    }
+    
+    .comparison-bad {
+        background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+        padding: 0.8rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+        border-left: 3px solid #EF4444;
+        font-size: 0.85rem;
+    }
+    
+    .comparison-good {
+        background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
+        padding: 0.8rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+        border-left: 3px solid #10B981;
+        font-size: 0.85rem;
+    }
+    
+    .numbered-step {
+        display: flex;
+        align-items: flex-start;
+        margin: 0.8rem 0;
+    }
+    
+    .step-number {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-center;
+        font-size: 1rem;
+        font-weight: 700;
+        margin-right: 0.8rem;
+        flex-shrink: 0;
+    }
+    
+    .footer {
+        text-align: center;
+        color: #666;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        border-top: 1px solid #E5E7EB;
+        font-size: 0.85rem;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
-    st.image("https://cassandra.apache.org/_/img/logos/cassandra_logo.svg", width=200)
-    st.markdown("---")
-    
+    st.markdown("### 🎯 Navegação")
     menu = st.radio(
-        "📋 Navegação",
+        "",
         ["🏠 Início", 
-         "📊 Arquitetura", 
-         "⚡ Cassandra vs SQL", 
-         "💾 Modelagem",
-         "🔥 Demo ao Vivo",
-         "📚 Casos Reais",
-         "🎯 Conclusão"]
+         "🏗️ Arquitetura & Stack",
+         "⚡ Por que Cassandra?",
+         "🌍 Casos Reais",
+         "💡 Implementação",
+         "📚 Referências"]
     )
     
     st.markdown("---")
-    st.markdown("### 👥 Equipe")
-    st.markdown("""
-    - Lucas Cosendey
-    - [Seus colegas aqui]
-    """)
-    st.markdown("---")
-    st.markdown("*UEPB - 2025*")
+    st.markdown("### 🏫 Instituição")
+    st.markdown("**UEPB - Campus V**  \nCiência de Dados  \n2025")
 
-# PÁGINA PRINCIPAL
+# PÁGINA INÍCIO
 if menu == "🏠 Início":
-    st.markdown('<div class="main-header">💬 Sistema de Mensagens com Apache Cassandra</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-title">NoSQL com Cassandra: Sistema de Mensagens Escalável</div>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="hero-subtitle">
+    Projeto acadêmico demonstrando a aplicação de Apache Cassandra na construção de um sistema de mensagens em tempo real, 
+    explorando suas vantagens sobre bancos SQL tradicionais.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Métricas
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown('<div class="card-purple"><div class="metric-big">100B+</div><div class="metric-label">Mensagens/dia (WhatsApp)</div></div>', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<div class="card-purple"><div class="metric-big">99.999%</div><div class="metric-label">Disponibilidade</div></div>', unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown('<div class="card-purple"><div class="metric-big">&lt;10ms</div><div class="metric-label">Latência de Escrita</div></div>', unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Equipe
+    st.markdown('<div class="section-header">👥 A Equipe</div>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("""
-        <div class="metric-card">
-            <h2>100B+</h2>
-            <p>Mensagens/dia no WhatsApp</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="team-card"><div style="font-size: 1.8rem;">👤</div><div class="team-name">Luan Torres</div><div class="team-role">Desenvolvedor e Analista</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="team-card"><div style="font-size: 1.8rem;">💼</div><div class="team-name">Lucas Edson</div><div class="team-role">Arquiteto de Soluções</div></div>', unsafe_allow_html=True)
     
     with col2:
-        st.markdown("""
-        <div class="metric-card">
-            <h2>99.999%</h2>
-            <p>Disponibilidade</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="team-card"><div style="font-size: 1.8rem;">👥</div><div class="team-name">Nathalia Rayssa</div><div class="team-role">Designer e Documentadora</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="team-card"><div style="font-size: 1.8rem;">🎓</div><div class="team-name">Djefersson</div><div class="team-role">Especialista em BD</div></div>', unsafe_allow_html=True)
     
     with col3:
-        st.markdown("""
-        <div class="metric-card">
-            <h2>&lt;10ms</h2>
-            <p>Latência de escrita</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="team-card"><div style="font-size: 1.8rem;">🔐</div><div class="team-name">Rianderson</div><div class="team-role">Arquiteto de Segurança</div></div>', unsafe_allow_html=True)
     
     st.markdown("---")
     
-    st.markdown("## 🎯 Objetivo do Projeto")
-    st.markdown("""
-    Demonstrar a aplicação prática de *bancos de dados NoSQL colunares* (Apache Cassandra) 
-    em um sistema de mensagens em tempo real, destacando as vantagens sobre bancos SQL tradicionais.
-    """)
+    # Objetivo
+    st.markdown('<div class="section-header">🎯 Objetivo</div>', unsafe_allow_html=True)
     
-    st.markdown("## 🚀 Por que Cassandra?")
-    
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([3, 2])
     
     with col1:
         st.markdown("""
-        <div class="highlight-box">
-            <h3>✅ Vantagens</h3>
-            <ul>
-                <li><b>Escritas massivas</b>: Milhões de msgs/segundo</li>
-                <li><b>Escalabilidade linear</b>: Adiciona nós = mais capacidade</li>
-                <li><b>Sem ponto único de falha</b>: Arquitetura peer-to-peer</li>
-                <li><b>Ordenação temporal nativa</b>: Clustering keys</li>
-                <li><b>Multi-datacenter</b>: Distribuição geográfica</li>
-            </ul>
+        <div class="card">
+        Desenvolver um sistema de mensagens simplificado (similar ao WhatsApp/Telegram) 
+        utilizando <strong>Apache Cassandra</strong> para demonstrar suas capacidades em cenários de alta escalabilidade.
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
-        <div class="danger-box">
-            <h3>❌ SQL Tradicional Falha Em:</h3>
-            <ul>
-                <li><b>Locks</b>: Contenção em escritas simultâneas</li>
-                <li><b>Sharding</b>: Escalabilidade complexa e manual</li>
-                <li><b>Master-Slave</b>: Single point of failure</li>
-                <li><b>Índices custosos</b>: Para ordenação temporal</li>
-                <li><b>Downtime</b>: Para manutenção e upgrades</li>
-            </ul>
+        <div class="comparison-good">
+        <strong>✅ Entregas:</strong><br>
+        • Troca de mensagens em tempo real<br>
+        • Alta disponibilidade e escalabilidade<br>
+        • Análise de performance<br>
+        • Documentação completa
         </div>
         """, unsafe_allow_html=True)
 
 # PÁGINA ARQUITETURA
-elif menu == "📊 Arquitetura":
-    st.markdown('<div class="main-header">📊 Arquitetura do Sistema</div>', unsafe_allow_html=True)
-    
-    st.markdown("## 🏗 Stack Tecnológica")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.info("*Banco de Dados*\n\nApache Cassandra (DataStax Astra)")
-    with col2:
-        st.info("*Backend*\n\nPython 3.x + astrapy")
-    with col3:
-        st.info("*Ambiente*\n\nCloud (DataStax Astra)")
-    
-    st.markdown("---")
-    
-    st.markdown("## 🔄 Arquitetura Cassandra")
-    
-    st.markdown("""
-    ### Wide-Column Store
-    
-    O Cassandra *NÃO é um banco colunar puro, mas sim um **wide-column store*:
-    """)
+elif menu == "🏗️ Arquitetura & Stack":
+    st.markdown('<div class="section-header">Arquitetura e Tecnologias</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("""
-        *🗄 Bancos Colunares Puros*
-        - BigQuery, Redshift
-        - Otimizados para OLAP
-        - Agregações rápidas
-        """)
+        <div class="card">
+        <div class="card-title">🗄️ Apache Cassandra (DataStax Astra)</div>
+        Cassandra-as-a-Service na nuvem, simplificando infraestrutura e permitindo foco na modelagem.
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="card">
+        <div class="card-title">🐍 Python 3.x + astrapy</div>
+        Flexibilidade para desenvolvimento rápido com integração nativa ao Astra DB.
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
-        *📦 Cassandra (Wide-Column)*
-        - Híbrido colunar + chave-valor
-        - Otimizado para OLTP distribuído
-        - Famílias de colunas dinâmicas
-        """)
+        <div class="card">
+        <div class="card-title">☁️ Ambiente Cloud</div>
+        Escalabilidade instantânea, alta disponibilidade e ambiente robusto.
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="card">
+        <div class="card-title">🔐 Segurança</div>
+        Gerenciamento seguro de credenciais com <code>python-dotenv</code> e <code>.gitignore</code>.
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    st.markdown("## 🧬 Origem")
+    # Modelagem
+    st.markdown('<div class="section-header">💾 Modelagem de Dados</div>', unsafe_allow_html=True)
     
     st.markdown("""
-    <div class="highlight-box">
-    <b>Desenvolvido no Facebook (2007)</b><br>
-    Por Avinash Lakshman (Amazon Dynamo) e Prashant Malik<br><br>
-    
-    <b>Síntese de dois papers seminais:</b><br>
-    • <b>Google Bigtable</b>: Modelo de dados (wide-column, SSTables)<br>
-    • <b>Amazon Dynamo</b>: Distribuição (peer-to-peer, hash ring, consistência eventual)
+    <div class="card">
+    <strong>Princípio: Query-Driven Design</strong><br>
+    No Cassandra, modelamos pelas <em>queries</em> que a aplicação fará, não por entidades (normalização SQL).
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("### 🎯 Características Principais")
+    col1, col2 = st.columns(2)
     
-    features = {
-        "Descentralizado": "Todos os nós são iguais (sem master)",
-        "Tolerante a Falhas": "Replicação automática de dados",
-        "Alta Disponibilidade": "Sistema continua operando durante falhas",
-        "Protocolo Gossip": "Comunicação P2P entre nós",
-        "Consistência Tunável": "Escolha entre consistência forte ou eventual"
-    }
-    
-    for feature, desc in features.items():
-        st.success(f"{feature}: {desc}")
-
-# PÁGINA COMPARAÇÃO
-elif menu == "⚡ Cassandra vs SQL":
-    st.markdown('<div class="main-header">⚡ Cassandra vs SQL Tradicional</div>', unsafe_allow_html=True)
-    
-    # Tabela comparativa
-    st.markdown("## 📊 Comparação Técnica")
-    
-    comparison_data = {
-        "Cenário": [
-            "Inserir 1M msgs/seg",
-            "Escalar 1TB → 10TB",
-            "Últimas 50 msgs",
-            "Falha de servidor",
-            "Multi-datacenter",
-            "Ordenação temporal"
-        ],
-        "SQL Tradicional ❌": [
-            "Locks, lentidão, travamento",
-            "Sharding manual, downtime",
-            "Index scan custoso",
-            "Sistema para",
-            "Replicação manual complexa",
-            "Índices custosos"
-        ],
-        "Apache Cassandra ✅": [
-            "Linear, sem degradação",
-            "Adiciona nós, zero downtime",
-            "Leitura de partição O(1)",
-            "Sistema continua operando",
-            "Nativo, automático",
-            "Clustering key nativa"
-        ]
-    }
-    
-    df = pd.DataFrame(comparison_data)
-    
-    st.dataframe(
-        df,
-        use_container_width=True,
-        hide_index=True
-    )
-    
-    st.markdown("---")
-    
-    st.markdown("## 🔥 Problemas Específicos do SQL")
-    
-    tab1, tab2, tab3, tab4 = st.tabs(["🔒 Locks", "📈 Escalabilidade", "⏱ Ordenação", "💥 SPOF"])
-    
-    with tab1:
-        st.markdown("### 🔒 Performance em Escritas")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("""
-            *Problema SQL:*
-            - Locks em operações INSERT
-            - Contenção com milhões de escritas
-            - Degradação exponencial
-            """)
-        with col2:
-            st.markdown("""
-            *Solução Cassandra:*
-            - LSM-tree (Log-Structured Merge-Tree)
-            - Append-only writes
-            - Sem locks, sem contenção
-            """)
-    
-    with tab2:
-        st.markdown("### 📈 Escalabilidade Horizontal")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("""
-            *Problema SQL:*
-            - Sharding manual
-            - Complexidade alta
-            - Downtime para rebalancear
-            """)
-        with col2:
-            st.markdown("""
-            *Solução Cassandra:*
-            - Hash ring automático
-            - Rebalanceamento dinâmico
-            - Zero downtime
-            """)
-    
-    with tab3:
-        st.markdown("### ⏱ Ordenação Temporal")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("""
-            *Problema SQL:*
-            - Índices B-tree custosos
-            - Performance degrada com volume
-            - Overhead de manutenção
-            """)
-        with col2:
-            st.markdown("""
-            *Solução Cassandra:*
-            - Clustering Key ordena fisicamente
-            - Ordenação no disco (nativa)
-            - Performance constante O(1)
-            """)
-    
-    with tab4:
-        st.markdown("### 💥 Single Point of Failure")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("""
-            *Problema SQL:*
-            - Arquitetura Master-Slave
-            - Master = ponto único de falha
-            - Sistema para se master cai
-            """)
-        with col2:
-            st.markdown("""
-            *Solução Cassandra:*
-            - Arquitetura peer-to-peer
-            - Todos os nós são iguais
-            - Falha de nó não para sistema
-            """)
-
-# PÁGINA MODELAGEM
-elif menu == "💾 Modelagem":
-    st.markdown('<div class="main-header">💾 Modelagem de Dados</div>', unsafe_allow_html=True)
-    
-    st.markdown("## 🎯 Princípio: Query-Driven Design")
-    
-    st.warning("""
-    *Cassandra pensa diferente do SQL!*
-    
-    - ❌ NÃO modelamos por entidades (normalização)
-    - ✅ Modelamos pelas *queries* que a aplicação fará
-    - ✅ Desnormalização é *incentivada*
-    """)
-    
-    st.markdown("---")
-    
-    st.markdown("## 📋 Tabelas do Sistema")
-    
-    tab1, tab2 = st.tabs(["👤 Usuários", "💬 Mensagens"])
-    
-    with tab1:
-        st.markdown("### Tabela: usuarios")
-        st.code("""
-CREATE TABLE usuarios (
+    with col1:
+        st.markdown("**Tabela: `usuarios`**")
+        st.code("""CREATE TABLE usuarios (
     usuario_id UUID PRIMARY KEY,
     nome TEXT,
     email TEXT,
     criado_em TIMESTAMP
-);
-        """, language="sql")
-        
-        st.markdown("""
-        *Decisões de Design:*
-        - usuario_id como PRIMARY KEY
-        - Simples e direta
-        - Busca rápida por ID
-        """)
+);""", language="sql")
     
-    with tab2:
-        st.markdown("### Tabela: mensagens")
-        st.code("""
-CREATE TABLE mensagens (
+    with col2:
+        st.markdown("**Tabela: `mensagens`**")
+        st.code("""CREATE TABLE mensagens (
     conversa_id UUID,
     mensagem_id TIMEUUID,
     remetente_id UUID,
-    destinatario_id UUID,
     conteudo TEXT,
-    enviada_em TIMESTAMP,
     PRIMARY KEY (conversa_id, mensagem_id)
-) WITH CLUSTERING ORDER BY (mensagem_id DESC);
-        """, language="sql")
+) WITH CLUSTERING ORDER BY (mensagem_id DESC);""", language="sql")
+    
+    st.markdown("""
+    <div class="comparison-good">
+    <strong>Decisões:</strong> 
+    <code>conversa_id</code> como Partition Key (agrupa mensagens fisicamente) | 
+    <code>mensagem_id (TIMEUUID)</code> como Clustering Key (ordenação cronológica automática)
+    </div>
+    """, unsafe_allow_html=True)
+
+# PÁGINA POR QUE CASSANDRA
+elif menu == "⚡ Por que Cassandra?":
+    st.markdown('<div class="section-header">Por que Cassandra ao invés de SQL?</div>', unsafe_allow_html=True)
+    
+    # Vantagens
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown('<div class="card-purple"><div class="card-title">⚡ Performance em Escrita</div>Milhões de operações/segundo sem locks, ideal para mensagens contínuas.</div>', unsafe_allow_html=True)
         
-        st.markdown("""
-        *Decisões de Design:*
+        st.markdown('<div class="card-purple"><div class="card-title">🎯 Particionamento Inteligente</div>Cada conversa isolada em uma partição, garantindo acesso rápido.</div>', unsafe_allow_html=True)
         
-        1. **conversa_id como Partition Key**
-           - Agrupa todas as mensagens da mesma conversa FISICAMENTE juntas
-           - Query "buscar mensagens da conversa X" = 1 única leitura de partição
-           - Conversas diferentes distribuídas em nós diferentes
+        st.markdown('<div class="card-purple"><div class="card-title">📈 Escalabilidade Linear</div>Adiciona nós = aumenta capacidade proporcionalmente, sem downtime.</div>', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<div class="card-purple"><div class="card-title">⏰ Ordenação Nativa (TIMEUUID)</div>Mensagens armazenadas e recuperadas em ordem cronológica automaticamente.</div>', unsafe_allow_html=True)
         
-        2. **mensagem_id (TIMEUUID) como Clustering Key**
-           - Ordenação cronológica AUTOMÁTICA
-           - IDs únicos globalmente distribuídos
-           - Inserções sempre no "final" da partição
-        
-        3. *ORDER BY DESC*
-           - Mensagens mais recentes primeiro
-           - Otimizado para "buscar últimas N mensagens"
-        """)
+        st.markdown('<div class="card-purple"><div class="card-title">🌍 Alta Disponibilidade</div>Replicação multi-datacenter, disponibilidade contínua mesmo com falhas.</div>', unsafe_allow_html=True)
     
     st.markdown("---")
     
-    st.markdown("## 🔍 Queries Principais")
-    
-    query1, query2 = st.columns(2)
-    
-    with query1:
-        st.markdown("*1. Buscar mensagens de uma conversa*")
-        st.code("""
-SELECT * FROM mensagens 
-WHERE conversa_id = ?
-LIMIT 50;
-        """, language="sql")
-        st.success("Performance: *O(1)* - Leitura de partição única")
-    
-    with query2:
-        st.markdown("*2. Listar usuários*")
-        st.code("""
-SELECT * FROM usuarios;
-        """, language="sql")
-        st.info("Operação simples e direta")
-
-# PÁGINA DEMO AO VIVO
-elif menu == "🔥 Demo ao Vivo":
-    st.markdown('<div class="main-header">🔥 Demonstração ao Vivo</div>', unsafe_allow_html=True)
-    
-    st.markdown("## 🎮 Interaja com o Sistema")
-    
-    st.info("💡 Esta é uma simulação da interface. O código real conecta no Astra DB!")
-    
-    # Simulação de inserção
-    st.markdown("### 📝 Enviar Nova Mensagem")
+    # Caso WhatsApp
+    st.markdown('<div class="section-header">📊 Caso Real: WhatsApp (100B msgs/dia)</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
     with col1:
-        remetente = st.text_input("Remetente", "João Silva")
-        destinatario = st.text_input("Destinatário", "Maria Santos")
+        st.markdown("**❌ Com SQL Tradicional:**")
+        st.markdown('<div class="comparison-bad"><strong>🔒 Locks Constantes</strong> - Bloqueios frequentes, impacta concorrência</div>', unsafe_allow_html=True)
+        st.markdown('<div class="comparison-bad"><strong>📊 Índices Gigantescos</strong> - Degrada performance</div>', unsafe_allow_html=True)
+        st.markdown('<div class="comparison-bad"><strong>🔧 Sharding Complexo</strong> - Manual, caro, difícil</div>', unsafe_allow_html=True)
+        st.markdown('<div class="comparison-bad"><strong>⏸️ Downtime</strong> - Manutenção exige interrupções</div>', unsafe_allow_html=True)
     
     with col2:
-        mensagem = st.text_area("Mensagem", "Oi, tudo bem? Vamos revisar o projeto hoje?")
-    
-    if st.button("📤 Enviar Mensagem", type="primary"):
-        with st.spinner("Inserindo no Cassandra..."):
-            import time
-            time.sleep(0.5)
-        st.success("✅ Mensagem enviada com sucesso! Latência: *8ms*")
-    
-    st.markdown("---")
-    
-    st.markdown("### 💬 Histórico de Conversa")
-    
-    # Dados simulados
-    mensagens_demo = [
-        {"Hora": "14:23", "Remetente": "João", "Mensagem": "E aí, vamos revisar?"},
-        {"Hora": "14:25", "Remetente": "Maria", "Mensagem": "Bora! Já terminei minha parte."},
-        {"Hora": "14:27", "Remetente": "João", "Mensagem": "Show! Te espero às 15h."},
-        {"Hora": "14:28", "Remetente": "Maria", "Mensagem": "Fechado! 👍"},
-    ]
-    
-    df_msgs = pd.DataFrame(mensagens_demo)
-    st.dataframe(df_msgs, use_container_width=True, hide_index=True)
-    
-    st.markdown("---")
-    
-    st.markdown("### 📊 Métricas de Performance")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    col1.metric("Latência Escrita", "8ms", "-2ms")
-    col2.metric("Latência Leitura", "12ms", "+1ms")
-    col3.metric("Msgs/segundo", "1.2M", "+5%")
-    col4.metric("Disponibilidade", "99.998%", "0%")
+        st.markdown("**✅ Com Cassandra:**")
+        st.markdown('<div class="comparison-good"><strong>⚡ Escritas Distribuídas</strong> - Minimiza contenção</div>', unsafe_allow_html=True)
+        st.markdown('<div class="comparison-good"><strong>🎯 Particionamento Automático</strong> - Acesso eficiente</div>', unsafe_allow_html=True)
+        st.markdown('<div class="comparison-good"><strong>📈 Adição Flexível de Nós</strong> - Sem interromper serviço</div>', unsafe_allow_html=True)
+        st.markdown('<div class="comparison-good"><strong>🔄 Replicação Transparente</strong> - Alta disponibilidade garantida</div>', unsafe_allow_html=True)
 
 # PÁGINA CASOS REAIS
-elif menu == "📚 Casos Reais":
-    st.markdown('<div class="main-header">📚 Casos de Uso Reais</div>', unsafe_allow_html=True)
-    
-    st.markdown("## 🌍 Empresas que usam Cassandra")
-    
-    # WhatsApp
-    with st.expander("📱 WhatsApp", expanded=True):
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.markdown("""
-            ### 📊 Números
-            - *~100 bilhões* msgs/dia
-            - *2+ bilhões* de usuários
-            - *99.99%* uptime
-            """)
-        with col2:
-            st.markdown("""
-            ### 🎯 Por que Cassandra?
-            - Única solução com escala horizontal mantendo latência baixa
-            - Escritas massivas distribuídas
-            - Multi-datacenter para usuários globais
-            """)
-    
-    # Instagram
-    with st.expander("📸 Instagram"):
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.markdown("""
-            ### 📊 Números
-            - *Bilhões* de posts
-            - *500M+* stories/dia
-            - Feed personalizado
-            """)
-        with col2:
-            st.markdown("""
-            ### 🎯 Por que Cassandra?
-            - Feed de atividades ordenado cronologicamente
-            - Ordenação temporal nativa (clustering keys)
-            - Alta disponibilidade global
-            """)
-    
-    # Netflix
-    with st.expander("🎬 Netflix"):
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.markdown("""
-            ### 📊 Números
-            - *230M+* assinantes
-            - *Petabytes* de dados
-            - Recomendações personalizadas
-            """)
-        with col2:
-            st.markdown("""
-            ### 🎯 Por que Cassandra?
-            - Histórico de visualizações
-            - Leituras rápidas mesmo com petabytes
-            - Sistema de recomendações em tempo real
-            """)
-    
-    # Apple
-    with st.expander("🍎 Apple"):
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.markdown("""
-            ### 📊 Números
-            - *75M+* músicas
-            - Apple Music global
-            - iCloud services
-            """)
-        with col2:
-            st.markdown("""
-            ### 🎯 Por que Cassandra?
-            - Metadados de músicas
-            - Preferências de usuários
-            - Disponibilidade global 24/7
-            """)
-    
-    st.markdown("---")
-    
-    st.markdown("## 💡 Padrão Comum")
+elif menu == "🌍 Casos Reais":
+    st.markdown('<div class="section-header">Quem Usa Cassandra em Produção?</div>', unsafe_allow_html=True)
     
     st.markdown("""
-    <div class="highlight-box">
-    Todas essas empresas escolheram Cassandra pelos mesmos motivos:
-    
-    ✅ <b>Escalabilidade massiva</b> (bilhões de operações)<br>
-    ✅ <b>Disponibilidade crítica</b> (99.99%+)<br>
-    ✅ <b>Latência consistente</b> (mesmo com crescimento)<br>
-    ✅ <b>Distribuição global</b> (multi-datacenter)<br>
-    ✅ <b>Sem downtime</b> (manutenção zero-downtime)
+    <div class="card">
+    Estas empresas processam <strong>bilhões de operações por dia</strong> e escolheram Cassandra 
+    pelos mesmos motivos: escalabilidade massiva, disponibilidade crítica e latência consistente.
     </div>
     """, unsafe_allow_html=True)
-
-# PÁGINA CONCLUSÃO
-elif menu == "🎯 Conclusão":
-    st.markdown('<div class="main-header">🎯 Conclusão</div>', unsafe_allow_html=True)
     
-    st.markdown("## 📝 Resumo do Projeto")
+    # WhatsApp
+    with st.expander("📱 **WhatsApp** - 100 Bilhões de Mensagens/Dia", expanded=True):
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.markdown("""
+            **Desafio:**
+            - Mais de **100 bilhões de mensagens por dia**
+            - **2+ bilhões de usuários** ativos
+            - Latência abaixo de 100ms
+            - 99.99% de disponibilidade
+            
+            **Solução Cassandra:**
+            - Armazena metadados de mensagens e estados de conversas
+            - Particionamento por `user_id` ou `conversation_id`
+            - Replicação multi-datacenter para alcance global
+            - Escritas distribuídas sem locks
+            
+            **Resultado:**
+            - Sistema escala horizontalmente conforme cresce
+            - Adicionar capacidade = adicionar nós
+            - Zero downtime mesmo com bilhões de mensagens
+            """)
+        
+        with col2:
+            st.markdown("""
+            <div class="card-purple">
+            <div style="font-size: 2rem; text-align: center; margin-bottom: 0.5rem;">📊</div>
+            <div style="text-align: center;">
+                <strong>100B+</strong><br>
+                msgs/dia<br><br>
+                <strong>2B+</strong><br>
+                usuários<br><br>
+                <strong>&lt;100ms</strong><br>
+                latência
+            </div>
+            </div>
+            """, unsafe_allow_html=True)
     
-    st.markdown("""
-    Demonstramos com sucesso a aplicação de *Apache Cassandra* em um sistema de mensagens,
-    evidenciando suas vantagens sobre bancos de dados SQL tradicionais.
-    """)
+    # Instagram
+    with st.expander("📸 **Instagram** - Feed de Atividades"):
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.markdown("""
+            **Desafio:**
+            - Bilhões de posts, comentários e likes
+            - Feed personalizado para cada usuário
+            - Ordenação cronológica inversa (mais recente primeiro)
+            - Notificações em tempo real
+            
+            **Solução Cassandra:**
+            - Tabela `user_feed` particionada por `user_id`
+            - Clustering key com `timestamp` para ordenação temporal
+            - Armazena IDs de posts + metadados
+            - Timeline de atividades por usuário
+            
+            **Modelagem:**
+            ```sql
+            CREATE TABLE user_feed (
+                user_id UUID,
+                activity_time TIMEUUID,
+                post_id UUID,
+                activity_type TEXT,
+                PRIMARY KEY (user_id, activity_time)
+            ) WITH CLUSTERING ORDER BY (activity_time DESC);
+            ```
+            
+            **Por que funciona:**
+            - Buscar feed = leitura de uma partição (O(1))
+            - Ordenação nativa por timestamp
+            - LIMIT 50 = apenas 50 primeiros registros
+            """)
+        
+        with col2:
+            st.markdown("""
+            <div class="comparison-good">
+            <strong>Vantagem Principal:</strong><br><br>
+            🎯 <strong>Ordenação Temporal Nativa</strong><br><br>
+            Clustering key com TIMEUUID garante que posts apareçam na ordem correta sem índices custosos.
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Netflix
+    with st.expander("🎬 **Netflix** - Histórico de Visualizações"):
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.markdown("""
+            **Desafio:**
+            - **230 milhões de assinantes** globalmente
+            - Histórico de visualizações de cada usuário
+            - Sistema de recomendações em tempo real
+            - Petabytes de dados de preferências
+            
+            **Solução Cassandra:**
+            - Tabela `user_viewing_history` por `user_id`
+            - Armazena: título assistido, timestamp, % assistido, dispositivo
+            - Queries rápidas mesmo com milhões de visualizações por usuário
+            - Alimenta algoritmo de recomendação em tempo real
+            
+            **Modelagem:**
+            ```sql
+            CREATE TABLE viewing_history (
+                user_id UUID,
+                watch_time TIMEUUID,
+                content_id UUID,
+                percent_watched INT,
+                device_type TEXT,
+                PRIMARY KEY (user_id, watch_time)
+            ) WITH CLUSTERING ORDER BY (watch_time DESC);
+            ```
+            
+            **Impacto:**
+            - Recomendações personalizadas instantâneas
+            - Performance consistente mesmo com petabytes
+            - Escalabilidade linear conforme base de usuários cresce
+            """)
+        
+        with col2:
+            st.markdown("""
+            <div class="card-purple">
+            <div style="font-size: 2rem; text-align: center; margin-bottom: 0.5rem;">📈</div>
+            <div style="text-align: center;">
+                <strong>230M+</strong><br>
+                assinantes<br><br>
+                <strong>Petabytes</strong><br>
+                de dados<br><br>
+                <strong>Tempo Real</strong><br>
+                recomendações
+            </div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Apple
+    with st.expander("🍎 **Apple** - Apple Music & iCloud"):
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.markdown("""
+            **Desafio:**
+            - **75 milhões de músicas** no catálogo
+            - Preferências e playlists de milhões de usuários
+            - Sincronização entre dispositivos (iPhone, Mac, iPad)
+            - Disponibilidade 24/7 global
+            
+            **Solução Cassandra:**
+            - Metadados de músicas (artista, álbum, gênero)
+            - Playlists e preferências de usuários
+            - Histórico de reprodução
+            - Replicação multi-datacenter para baixa latência global
+            
+            **Por que Cassandra:**
+            - Alta disponibilidade crítica (Apple não pode ficar fora do ar)
+            - Escalabilidade para crescimento imprevisível
+            - Replicação geográfica (datacenters EUA, Europa, Ásia)
+            - Performance consistente independente do volume
+            """)
+        
+        with col2:
+            st.markdown("""
+            <div class="comparison-good">
+            <strong>Caso de Uso:</strong><br><br>
+            🌍 <strong>Distribuição Global</strong><br><br>
+            Replicação multi-datacenter garante que usuários no Japão tenham mesma latência que nos EUA.
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Uber
+    with st.expander("🚗 **Uber** - Histórico de Viagens"):
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.markdown("""
+            **Desafio:**
+            - Milhões de viagens por dia
+            - Histórico completo por usuário e motorista
+            - Dados de localização em tempo real
+            - Análise de padrões de viagem
+            
+            **Solução Cassandra:**
+            - Tabela `trip_history` particionada por `user_id` ou `driver_id`
+            - Armazena: origem, destino, valor, duração, avaliação
+            - Time-series data para análise de padrões
+            - Suporta consultas rápidas de "últimas 50 viagens"
+            
+            **Arquitetura:**
+            ```sql
+            CREATE TABLE trip_history (
+                user_id UUID,
+                trip_time TIMEUUID,
+                trip_id UUID,
+                origin TEXT,
+                destination TEXT,
+                fare DECIMAL,
+                rating INT,
+                PRIMARY KEY (user_id, trip_time)
+            ) WITH CLUSTERING ORDER BY (trip_time DESC);
+            ```
+            """)
+        
+        with col2:
+            st.markdown("""
+            <div class="card-purple">
+            <div style="font-size: 2rem; text-align: center; margin-bottom: 0.5rem;">🚗</div>
+            <div style="text-align: center;">
+                <strong>Milhões</strong><br>
+                viagens/dia<br><br>
+                <strong>Real-time</strong><br>
+                tracking<br><br>
+                <strong>Global</strong><br>
+                operação
+            </div>
+            </div>
+            """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    st.markdown("## ✅ O que entregamos")
+    # Padrão Comum
+    st.markdown('<div class="section-header">🎯 Padrão Comum Entre Todos</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("""
-        ### 📦 Entregas Técnicas
-        - ✅ Repositório GitHub completo
-        - ✅ Modelagem de dados documentada
-        - ✅ Scripts CQL funcionais
-        - ✅ Código Python conectando ao Astra
-        - ✅ Justificativa técnica robusta
-        """)
+        <div class="comparison-good">
+        <strong>✅ Por que escolheram Cassandra:</strong><br><br>
+        📈 <strong>Escalabilidade Massiva</strong><br>
+        Bilhões de operações sem degradação<br><br>
+        ⏱️ <strong>Latência Consistente</strong><br>
+        Performance não degrada com volume<br><br>
+        🌍 <strong>Distribuição Global</strong><br>
+        Multi-datacenter nativo<br><br>
+        🔄 <strong>Alta Disponibilidade</strong><br>
+        99.99%+ uptime garantido
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
-        ### 🎓 Conceitos Demonstrados
-        - ✅ Query-driven design
-        - ✅ Partition Keys & Clustering Keys
-        - ✅ Ordenação por TIMEUUID
-        - ✅ Distribuição de dados
-        - ✅ Alta disponibilidade
-        """)
+        <div class="comparison-bad">
+        <strong>❌ Por que SQL falharia:</strong><br><br>
+        🔒 <strong>Locks em Escritas</strong><br>
+        Contenção com alto volume<br><br>
+        📊 <strong>Índices Custosos</strong><br>
+        Performance degrada com bilhões de registros<br><br>
+        🔧 <strong>Sharding Manual</strong><br>
+        Complexo, caro, propenso a erros<br><br>
+        ⏸️ <strong>Downtime</strong><br>
+        Manutenção requer parar sistema
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    st.markdown("## 🏆 Conclusão Final")
+    # Tabela Comparativa
+    st.markdown('<div class="section-header">📊 Comparação de Casos de Uso</div>', unsafe_allow_html=True)
+    
+    df_casos = pd.DataFrame({
+        'Empresa': ['WhatsApp', 'Instagram', 'Netflix', 'Apple', 'Uber'],
+        'Volume': ['100B msgs/dia', 'Bilhões posts', '230M users', '75M músicas', 'Milhões trips/dia'],
+        'Caso de Uso': ['Metadados msgs', 'Feed timeline', 'Histórico views', 'Preferências', 'Trip history'],
+        'Partition Key': ['conversation_id', 'user_id', 'user_id', 'user_id', 'user_id'],
+        'Clustering Key': ['TIMEUUID', 'activity_time', 'watch_time', 'timestamp', 'trip_time'],
+        'Vantagem Principal': ['Escritas massivas', 'Ordenação temporal', 'Petabytes data', 'Multi-DC', 'Time-series']
+    })
+    
+    st.dataframe(df_casos, use_container_width=True, hide_index=True)
+
+# PÁGINA IMPLEMENTAÇÃO
+elif menu == "💡 Implementação":
+    st.markdown('<div class="section-header">Conceitos Demonstrados</div>', unsafe_allow_html=True)
+    
+    concepts = [
+        ("1", "Modelagem Orientada a Queries", "Definir esquema baseado em como os dados serão consultados."),
+        ("2", "Partition Keys e Clustering Keys", "Partition Key para distribuição, Clustering Key para ordenação."),
+        ("3", "Ordenação por TIMEUUID", "Garantir ordenação cronológica automática das mensagens."),
+        ("4", "Distribuição de Dados", "Cassandra distribui dados eficientemente entre nós do cluster."),
+        ("5", "Alta Disponibilidade", "Arquitetura suporta automaticamente escalabilidade horizontal.")
+    ]
+    
+    for num, title, desc in concepts:
+        st.markdown(f"""
+        <div class="numbered-step">
+            <div class="step-number">{num}</div>
+            <div>
+                <strong style="font-size: 1rem;">{title}</strong><br>
+                <span style="font-size: 0.85rem; color: #666;">{desc}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # CHAT SIMULADO
+    st.markdown('<div class="section-header">💬 Demonstração: Chat em Tempo Real</div>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        # Container do chat
+        st.markdown("""
+        <div style="background: white; padding: 1.2rem; border-radius: 12px; 
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid #e0e0e0;">
+        """, unsafe_allow_html=True)
+        
+        # Header do chat
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+            <strong style="font-size: 1.1rem;">💬 Conversa: João ↔ Maria</strong>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Área de mensagens
+        st.markdown("""
+        <div style="padding: 1rem; min-height: 250px; background: #fafafa; 
+                    border-radius: 8px; margin-bottom: 1rem; overflow-y: auto;">
+        """, unsafe_allow_html=True)
+        
+        # Mensagem 1 - João
+        st.markdown("""
+        <div style="background: #E3F2FD; padding: 0.8rem; border-radius: 12px; 
+                    margin-bottom: 0.8rem; max-width: 75%; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="color: #1976D2; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem;">
+                👤 João • 14:27
+            </div>
+            <div style="font-size: 0.95rem; color: #333;">
+                Oi, tudo bem?
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Mensagem 2 - Maria
+        st.markdown("""
+        <div style="background: #F3E5F5; padding: 0.8rem; border-radius: 12px; 
+                    margin-bottom: 0.8rem; max-width: 75%; margin-left: auto; 
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="color: #7B1FA2; font-size: 0.8rem; font-weight: 600; 
+                        margin-bottom: 0.3rem; text-align: right;">
+                14:28 • Maria 👥
+            </div>
+            <div style="font-size: 0.95rem; color: #333; text-align: right;">
+                Tudo ótimo! E você?
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Mensagem 3 - João
+        st.markdown("""
+        <div style="background: #E3F2FD; padding: 0.8rem; border-radius: 12px; 
+                    margin-bottom: 0.8rem; max-width: 75%; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="color: #1976D2; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem;">
+                👤 João • 14:28
+            </div>
+            <div style="font-size: 0.95rem; color: #333;">
+                Show! Vamos revisar o projeto? 📚
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Mensagem 4 - Maria
+        st.markdown("""
+        <div style="background: #F3E5F5; padding: 0.8rem; border-radius: 12px; 
+                    max-width: 75%; margin-left: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="color: #7B1FA2; font-size: 0.8rem; font-weight: 600; 
+                        margin-bottom: 0.3rem; text-align: right;">
+                14:29 • Maria 👥
+            </div>
+            <div style="font-size: 0.95rem; color: #333; text-align: right;">
+                Perfeito! Às 15h? 👍
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("</div>", unsafe_allow_html=True)  # Fecha área de mensagens
+        
+        # Input de mensagem
+        st.text_input("Digite sua mensagem...", key="msg_input", label_visibility="collapsed")
+        st.button("📤 Enviar Mensagem", type="primary", use_container_width=True)
+        
+        st.markdown("</div>", unsafe_allow_html=True)  # Fecha container do chat
+    
+    with col2:
+        st.markdown("""
+        <div class="comparison-good">
+        <strong>✅ Mensagem Enviada!</strong><br><br>
+        ⏱️ <strong>Latência:</strong> 8ms<br>
+        📊 <strong>Status:</strong> Replicada<br>
+        🌍 <strong>Datacenters:</strong> 3<br>
+        💾 <strong>Partição:</strong> conv-001<br>
+        🔑 <strong>TIMEUUID:</strong> e2a7f3d0...
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="card">
+        <strong style="font-size: 0.9rem;">🔄 O que aconteceu:</strong><br>
+        <span style="font-size: 0.8rem;">
+        1. Escrita no Commit Log<br>
+        2. Inserção na Memtable<br>
+        3. Retorno de sucesso<br>
+        4. Replicação assíncrona
+        </span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # TABELA DO CASSANDRA
+    st.markdown('<div class="section-header">📊 Como os Dados Ficam no Cassandra</div>', unsafe_allow_html=True)
     
     st.markdown("""
-    <div class="highlight-box">
-    <h3>Para sistemas de mensagens que exigem:</h3>
+    <div class="card">
+    As mensagens são organizadas em <strong>partições</strong> pela <code>conversa_id</code> e ordenadas 
+    dentro de cada partição pelo <code>mensagem_id (TIMEUUID)</code> em ordem decrescente (mais recente primeiro).
+    </div>
+    """, unsafe_allow_html=True)
     
-    • Alta volumetria de escritas (milhões/segundo)<br>
-    • Crescimento imprevisível<br>
-    • Disponibilidade crítica (99.999%)<br>
-    • Latência consistente<br>
-    • Distribuição geográfica<br><br>
+    # Tabela Partição 1
+    st.markdown("**🔹 PARTIÇÃO 1:** `conversa_id = 'conv-001'` (João ↔ Maria)")
     
-    <h2 style="color: #2E7D32;">Apache Cassandra é a escolha técnica superior! ✅</h2>
+    df_conv1 = pd.DataFrame({
+        'mensagem_id (TIMEUUID)': [
+            'e2a7f3d0-c41b-11f0...',
+            'e1f8b2c0-c41b-11f0...',
+            'e0f37ca0-c41b-11f0...'
+        ],
+        'remetente_id': [
+            'user-maria',
+            'user-joao',
+            'user-joao'
+        ],
+        'conteudo': [
+            'Perfeito! Às 15h? 👍',
+            'Show! Vamos revisar o projeto? 📚',
+            'Oi, tudo bem?'
+        ],
+        'enviada_em': [
+            '2025-11-18 14:29:15',
+            '2025-11-18 14:28:42',
+            '2025-11-18 14:27:23'
+        ]
+    })
     
-    O modelo wide-column distribuído resolve problemas fundamentais que SQL não foi projetado para enfrentar.
+    st.dataframe(df_conv1, use_container_width=True, hide_index=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Tabela Partição 2
+    st.markdown("**🔹 PARTIÇÃO 2:** `conversa_id = 'conv-002'` (Lucas ↔ Ana)")
+    
+    df_conv2 = pd.DataFrame({
+        'mensagem_id (TIMEUUID)': [
+            'f3b8c4e0-c41b-11f0...',
+            'f2d1a5d0-c41b-11f0...',
+            'f1c28ba0-c41b-11f0...'
+        ],
+        'remetente_id': [
+            'user-ana',
+            'user-lucas',
+            'user-ana'
+        ],
+        'conteudo': [
+            'Combinado! 🎯',
+            'Vamos apresentar às 15h?',
+            'Oi Lucas, tudo certo?'
+        ],
+        'enviada_em': [
+            '2025-11-18 14:30:55',
+            '2025-11-18 14:30:28',
+            '2025-11-18 14:30:01'
+        ]
+    })
+    
+    st.dataframe(df_conv2, use_container_width=True, hide_index=True)
+    
+    st.markdown("""
+    <div class="comparison-good" style="margin-top: 1rem;">
+    <strong>🎯 Observações Importantes:</strong><br>
+    • Cada conversa = 1 partição isolada fisicamente<br>
+    • Mensagens ordenadas por timestamp (DESC)<br>
+    • Buscar conversa = leitura de UMA partição (O(1))<br>
+    • Conversas diferentes em nós diferentes = balanceamento<br>
+    • LIMIT 50 = lê apenas 50 primeiros registros da partição
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    st.markdown("## 📚 Referências")
+    # Query de exemplo
+    st.markdown('<div class="section-header">🔍 Query em Ação</div>', unsafe_allow_html=True)
     
-    st.markdown("""
-    *FOWLER, Martin; SADALAGE, Pramod J.* NoSQL Distilled: A Brief Guide to the Emerging World of Polyglot Persistence. 
-    Upper Saddle River, NJ: Addison-Wesley, 2012.
+    col1, col2 = st.columns(2)
     
-    *HEWITT, Eben.* Cassandra: The Definitive Guide. Sebastopol, CA: O'Reilly Media, 2010.
+    with col1:
+        st.markdown("**Query CQL:**")
+        st.code("""
+SELECT * FROM mensagens 
+WHERE conversa_id = 'conv-001'
+ORDER BY mensagem_id DESC
+LIMIT 50;
+        """, language="sql")
     
-    *LAKSHMAN, Avinash; MALIK, Prashant.* Cassandra: a decentralized structured storage system. 
-    ACM SIGOPS Operating Systems Review, v. 44, n. 2, p. 35-40, 2010.
-    
-    *DATASTAX.* Apache Cassandra Documentation. Disponível em: https://cassandra.apache.org/doc/latest/
-    """)
+    with col2:
+        st.markdown("**Performance:**")
+        st.markdown("""
+        <div class="card">
+        ⚡ <strong>Tempo:</strong> ~5ms<br>
+        📍 <strong>Operação:</strong> Leitura de partição única<br>
+        💾 <strong>Complexidade:</strong> O(1)<br>
+        🎯 <strong>Dados lidos:</strong> Apenas 50 mensagens<br>
+        ✅ <strong>Índice usado:</strong> Nenhum (ordenação nativa)
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    st.balloons()
+    st.markdown('<div class="section-header">🔒 Segurança e Boas Práticas</div>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        <div class="card">
+        <strong>Arquivos Ignorados (.gitignore):</strong><br>
+        • <code>.env</code> (credenciais)<br>
+        • <code>__pycache__/</code> (Python cache)<br>
+        • <code>venv/</code> (ambientes virtuais)<br>
+        • <code>.vscode/</code>, <code>.idea/</code> (IDEs)
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="card">
+        <strong>Licença Acadêmica:</strong><br>
+        Projeto desenvolvido para fins educacionais. 
+        Não se destina a uso comercial sem modificações apropriadas.
+        </div>
+        """, unsafe_allow_html=True)
+
+# PÁGINA REFERÊNCIAS
+elif menu == "📚 Referências":
+    st.markdown('<div class="section-header">Referências</div>', unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="card">
+        <div style="text-align: center; font-size: 2.5rem; margin-bottom: 0.5rem;">📘</div>
+        <strong>DataStax Astra</strong><br>
+        <a href="https://docs.datastax.com/" target="_blank" style="font-size: 0.85rem;">Documentação Oficial</a>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="card">
+        <div style="text-align: center; font-size: 2.5rem; margin-bottom: 0.5rem;">⭐</div>
+        <strong>Apache Cassandra</strong><br>
+        <a href="https://cassandra.apache.org/doc/latest/" target="_blank" style="font-size: 0.85rem;">Documentação Completa</a>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="card">
+        <div style="text-align: center; font-size: 2.5rem; margin-bottom: 0.5rem;">🎯</div>
+        <strong>Best Practices</strong><br>
+        <a href="https://cassandra.apache.org/doc/latest/data_modeling/" target="_blank" style="font-size: 0.85rem;">Data Modeling Guide</a>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    st.markdown("### 📖 Bibliografia")
     
     st.markdown("""
-    <div style="text-align: center; padding: 2rem;">
-        <h2>🎉 Obrigado pela atenção! 🎉</h2>
-        <p>Dúvidas? Perguntas? Estamos aqui! 😊</p>
+    <div class="card">
+    <p style="font-size: 0.85rem; margin: 0.3rem 0;"><strong>FOWLER, Martin; SADALAGE, Pramod J.</strong> <em>NoSQL Distilled.</em> Addison-Wesley, 2012.</p>
+    <p style="font-size: 0.85rem; margin: 0.3rem 0;"><strong>HEWITT, Eben.</strong> <em>Cassandra: The Definitive Guide.</em> O'Reilly Media, 2010.</p>
+    <p style="font-size: 0.85rem; margin: 0.3rem 0;"><strong>LAKSHMAN, A.; MALIK, P.</strong> Cassandra: a decentralized structured storage system. <em>ACM SIGOPS,</em> 2010.</p>
     </div>
     """, unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
 st.markdown("""
-<div style="text-align: center; color: #666; padding: 1rem;">
-    Sistema de Mensagens com Apache Cassandra | UEPB 2025<br>
-    Desenvolvido para a disciplina de Bancos de Dados NoSQL
+<div class="footer">
+    <strong>NoSQL com Cassandra: Sistema de Mensagens Escalável</strong><br>
+    UEPB - Campus V | Ciência de Dados | 2025 | Feito com Gamma
 </div>
 """, unsafe_allow_html=True)
